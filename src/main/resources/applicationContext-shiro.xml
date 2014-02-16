@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context" xsi:schemaLocation="
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/context  http://www.springframework.org/schema/context/spring-context-3.2.xsd"
+	default-lazy-init="true">
+
+	<description>Shiro Configuration</description>
+
+    <!-- 加载配置属性文件 -->
+	<context:property-placeholder ignore-unresolvable="true" location="classpath*:/application.properties" />
+	
+	<!-- 定义 Shiro 主要业务对象 -->
+	<bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+<!-- 		<property name="realm" ref="systemAuthorizingRealm" /> -->
+		<property name="realm" ref="authenticationRealm" />
+		<property name="cacheManager" ref="cacheManager" />
+	</bean>
+	
+	<bean id="authenticationRealm" class="com.hongqiang.shop.common.security.shiro.AuthenticationRealm">
+		<property name="authorizationCacheName" value="authorization" />
+	</bean>
+
+<!-- 	<bean id="shiroCacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager"> -->
+<!-- 		<property name="cacheManager" ref="ehCacheManager" /> -->
+<!-- 		<property name="cacheManagerConfigFile" value="classpath:cache/ehcache.xml"/> -->
+<!-- 	</bean> -->
+
+
+	<!-- 用户授权信息Cache, 采用EhCache -->
+	<bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+		<property name="cacheManagerConfigFile" value="classpath:cache/ehcache.xml"/>
+	</bean>
+	
+	<bean id="authenticationFilter" class="com.hongqiang.shop.common.filter.AuthenticationFilter" />
+	
+	<!-- 保证实现了Shiro内部lifecycle函数的bean执行 -->
+	<bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor"/>
+	
+	<!-- AOP式方法级权限检查  -->
+	<bean class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator" depends-on="lifecycleBeanPostProcessor">
+		<property name="proxyTargetClass" value="true" />
+	</bean>
+	
+	<bean class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+    	<property name="securityManager" ref="securityManager"/>
+	</bean>
+	
+		<bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+		<property name="staticMethod" value="org.apache.shiro.SecurityUtils.setSecurityManager" />
+		<property name="arguments" ref="securityManager" />
+	</bean>
+
+	<!-- 安全认证过滤器 -->
+	<bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+		<property name="securityManager" ref="securityManager" />
+		<property name="loginUrl" value="/admin/login.jsp" />
+		<property name="successUrl" value="${adminPath}/common/main.jhtml" />
+		<property name="unauthorizedUrl" value="/admin/login.jsp" />
+		<property name="filters">
+            <map>
+                <entry key="authc" value-ref="authenticationFilter"/>
+            </map>
+        </property>
+		<property name="filterChainDefinitions">
+			<value>
+				${adminPath}/logout.jsp = logout
+				${adminPath}/common/captcha.jhtml = anon
+
+				${adminPath}/product/** = perms["admin:product"]
+				${adminPath}/product_category/** = perms["admin:productCategory"]
+				${adminPath}/parameter_group/** = perms["admin:parameterGroup"]
+				${adminPath}/attribute/** = perms["admin:attribute"]
+				${adminPath}/specification/** = perms["admin:specification"]
+				${adminPath}/brand/** = perms["admin:brand"]
+				${adminPath}/product_notify/** = perms["admin:productNotify"]
+
+				${adminPath}/order/** = perms["admin:order"]
+				${adminPath}/print/** = perms["admin:print"]
+				${adminPath}/payment/** = perms["admin:payment"]
+				${adminPath}/refunds/** = perms["admin:refunds"]
+				${adminPath}/shipping/** = perms["admin:shipping"]
+				${adminPath}/returns/** = perms["admin:returns"]
+				${adminPath}/delivery_center/** = perms["admin:deliveryCenter"]
+				${adminPath}/delivery_template/** = perms["admin:deliveryTemplate"]
+
+				${adminPath}/member/** = perms["admin:member"]
+				${adminPath}/member_rank/** = perms["admin:memberRank"]
+				${adminPath}/member_attribute/** = perms["admin:memberAttribute"]
+				${adminPath}/review/** = perms["admin:review"]
+				${adminPath}/consultation/** = perms["admin:consultation"]
+
+				${adminPath}/navigation/** = perms["admin:navigation"]
+				${adminPath}/article/** = perms["admin:article"]
+				${adminPath}/article_category/** = perms["admin:articleCategory"]
+				${adminPath}/tag/** = perms["admin:tag"]
+				${adminPath}/friend_link/** = perms["admin:friendLink"]
+				${adminPath}/ad_position/** = perms["admin:adPosition"]
+				${adminPath}/ad/** = perms["admin:ad"]
+				${adminPath}/template/** = perms["admin:template"]
+				${adminPath}/cache/** = perms["admin:cache"]
+				${adminPath}/static/** = perms["admin:static"]
+				${adminPath}/index/** = perms["admin:index"]
+
+				${adminPath}/promotion/** = perms["admin:promotion"]
+				${adminPath}/coupon/** = perms["admin:coupon"]
+				${adminPath}/seo/** = perms["admin:seo"]
+				${adminPath}/sitemap/** = perms["admin:sitemap"]
+
+				${adminPath}/statistics/** = perms["admin:statistics"]
+				${adminPath}/sales/** = perms["admin:sales"]
+				${adminPath}/sales_ranking/** = perms["admin:salesRanking"]
+				${adminPath}/purchase_ranking/** = perms["admin:purchaseRanking"]
+				${adminPath}/deposit/** = perms["admin:deposit"]
+
+				${adminPath}/setting/** = perms["admin:setting"]
+				${adminPath}/area/** = perms["admin:area"]
+				${adminPath}/payment_method/** = perms["admin:paymentMethod"]
+				${adminPath}/shipping_method/** = perms["admin:shippingMethod"]
+				${adminPath}/delivery_corp/** = perms["admin:deliveryCorp"]
+				${adminPath}/payment_plugin/** = perms["admin:paymentPlugin"]
+				${adminPath}/storage_plugin/** = perms["admin:storagePlugin"]
+				${adminPath}/admin/** = perms["admin:admin"]
+				${adminPath}/role/** = perms["admin:role"]
+				${adminPath}/message/** = perms["admin:message"]
+				${adminPath}/log/** = perms["admin:log"]
+
+				${adminPath}/** = authc
+		 	</value>
+		</property>
+	</bean>
+
+</beans>
